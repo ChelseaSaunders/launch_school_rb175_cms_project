@@ -1,4 +1,4 @@
-HISTORY FILE
+HISTORY
 
 1993 - Yukihiro Matsumoto dreams up Ruby.
 1995 - Ruby 0.95 released.
@@ -16,3 +16,5 @@ HISTORY FILE
 2017 - Ruby 2.5 released.
 2018 - Ruby 2.6 released.
 2019 - Ruby 2.7 released.
+
+EDITING WORKS

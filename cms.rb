@@ -28,7 +28,7 @@ def load_file(filename)
     render_markdown(File.read(@root + "/data/#{filename}"))
   when ".txt"
     headers["Content-Type"] = "text/plain"
-    File.read("data/#{filename}")
+    File.read(@root + "/data/#{filename}")
   end
 end
 

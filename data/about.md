@@ -1,3 +1,1 @@
-# Hello world!
-
-All your base are belong to us.
+Ruby is... easy to write. And test edit worked.
