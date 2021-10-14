@@ -1,0 +1,10 @@
+<p>Edit content of <%= @filename %></p>
+<form action="/<%= @filename %>" method="post">
+  <fieldset>
+    <textarea name="new_text" id="new_text" rows="10" cols="80" placeholder="<%= @text %>"></textarea>
+  </fieldset>
+
+  <fieldset>
+    <input type="submit" value="Save Changes">
+  </fieldset>
+</form>
