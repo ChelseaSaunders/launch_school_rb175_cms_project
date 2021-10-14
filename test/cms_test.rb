@@ -3,6 +3,7 @@ ENV["RACK_ENV"] = "test"
 require "minitest/autorun"
 require "minitest/reporters"
 require "rack/test"
+require "fileutils"
 
 require_relative "../cms"
 
@@ -15,8 +16,27 @@ class AppTest < Minitest::Test
     Sinatra::Application
   end
 
+  def setup
+    FileUtils.mkdir_p(data_path)
+  end
+
+  def teardown
+    FileUtils.rm_rf(data_path)
+  end
+
+  def create_file(name, text="")
+    File.open(File.join(data_path, name), "w") do |file|
+      file.write(text)
+    end
+  end
+
   def test_index
+    create_file("about.md")
+    create_file("changes.txt")
+    create_file("history.txt")
+
     get "/"
+
     assert_equal 200, last_response.status
     assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
     assert_includes last_response.body, "about.md"
@@ -25,7 +45,10 @@ class AppTest < Minitest::Test
   end
 
   def test_about_md
+    create_file("about.md", "Ruby is... easy to write.")
+
     get "/about.md"
+
     assert_equal 200, last_response.status
     assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
     assert_includes last_response.body, "Ruby is..."
@@ -33,32 +56,43 @@ class AppTest < Minitest::Test
   end
 
   def test_changes_txt
+    create_file("changes.txt", "Testing... 1...2...3")
+
     get "/changes.txt"
+
     assert_equal 200, last_response.status
     assert_equal "text/plain", last_response["Content-Type"]
-    assert_includes last_response.body, "1993 - Yukihiro Matsumoto dreams up Ruby."
-    assert_includes last_response.body, "2019 - Ruby 2.7 released."
+    assert_includes last_response.body, "Testing... "
+    assert_includes last_response.body, "1...2...3"
   end
 
   def test_history_txt
+    create_file("history.txt", "Another test, this is history.txt.")
+
     get "/history.txt"
+
     assert_equal 200, last_response.status
     assert_equal "text/plain", last_response["Content-Type"]
-    assert_includes last_response.body, "Yukihiro Matsumoto dreams"
-    assert_includes last_response.body, "2019 - Ruby 2.7 released."
+    assert_includes last_response.body, "Another test, "
+    assert_includes last_response.body, "this is history.txt."
   end
 
   def test_file_does_not_exist
     get "/nonexistant.txt"
+
     assert_equal 302, last_response.status
     get last_response["Location"] # Request the page that the user was redirected to
     assert_equal 200, last_response.status
     assert_includes last_response.body, "nonexistant.txt does not exist."
+
     get "/" # Reload the page
+
     refute_includes last_response.body, "nonexistant.txt does not exist."
   end
 
   def test_file_edit_page
+    create_file("changes.txt")
+
     get "/changes.txt/edit"
 
     assert_equal 200, last_response.status
@@ -68,26 +102,30 @@ class AppTest < Minitest::Test
   end
 
   def test_updating_file_txt
-    
-    post "/changes.txt", new_text: "new content 1993 - Yukihiro Matsumoto dreams up Ruby.  2019 - Ruby 2.7 released."
+    create_file("changes.txt", "This is the original text.")
+
+    post "/changes.txt", new_text: "This is the edited text."
 
     assert_equal 302, last_response.status
     get last_response["Location"]
     assert_includes last_response.body, "changes.txt has been updated"
   
     get "/changes.txt"
-    assert_includes last_response.body, "new content"
+    
+    assert_includes last_response.body, "This is the edited text."
   end
 
   def test_updating_file_md
-    post "/about.md", new_text: "Ruby is... easy to write. And test edit worked."
+    create_file("about.md", "This is the original text.")
+
+    post "/about.md", new_text: "This is the edited text."
 
     assert_equal 302, last_response.status
     get last_response["Location"]
-
     assert_includes last_response.body, "about.md has been updated"
 
     get "/about.md"
-    assert_includes last_response.body, "edit worked"
+
+    assert_includes last_response.body, "This is the edited text."
   end
 end

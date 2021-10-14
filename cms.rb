@@ -9,7 +9,6 @@ configure do
   set :erb, :escape_html => true
 end
 
-
 helpers do
   def render_markdown(text)
     markdown = Redcarpet::Markdown.new(Redcarpet::Render::HTML)
@@ -17,47 +16,58 @@ helpers do
   end
 end
 
-before do
-  @root = File.expand_path("..", __FILE__)
-  @files = Dir.glob(@root + "/data/*").map { |filepath| filepath.split("/").last }
+def data_path
+  if ENV["RACK_ENV"] == "test"
+    File.expand_path("../test/data", __FILE__)
+  else
+    File.expand_path("../data", __FILE__)
+  end
 end
 
-def load_file(filename)
-  case File.extname(filename) 
+def load_file(path)
+  text = File.read(path)
+  case File.extname(path) 
   when ".md"
-    render_markdown(File.read(@root + "/data/#{filename}"))
+    render_markdown(text)
   when ".txt"
     headers["Content-Type"] = "text/plain"
-    File.read(@root + "/data/#{filename}")
+    text
   end
 end
 
 get "/" do
-  erb :index, layout: :layout
+  pattern = File.join(data_path, "*")
+  @files = Dir.glob(pattern).map do |path|
+    File.basename(path)
+  end
+  erb :index
 end
 
 get "/:filename" do
-  filename = params[:filename]
+  file_path = File.join(data_path, params[:filename])
 
-  if !@files.include?(filename)
-    session[:message] = "#{filename} does not exist."
+  if File.exist?(file_path)
+    load_file(file_path)
+  else
+    session[:message] = "#{params[:filename]} does not exist."
     redirect "/"
-  else 
-    load_file(filename)
   end
 end
 
 get "/:filename/edit" do
+  file_path = File.join(data_path, params[:filename])
+
   @filename = params[:filename]
-  @text = File.read(@root + "/data/#{@filename}")
-  erb :edit, layout: :layout
+  @text = File.read(file_path)
+
+  erb :edit
 end
 
 post "/:filename" do
-  @filename = params[:filename]
-  #full_file_path = File.expand_path("../data", __FILE__) + @filename
+  file_path = File.join(data_path, params[:filename])
 
-  File.write(@root + "/data/#{@filename}", "#{params[:new_text]}")
-  session[:message] = "#{@filename} has been updated."
+  File.write(file_path, params[:new_text])
+
+  session[:message] = "#{params[:filename]} has been updated."
   redirect "/"
 end
