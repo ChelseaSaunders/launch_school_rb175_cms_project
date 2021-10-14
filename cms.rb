@@ -9,7 +9,6 @@ configure do
   set :erb, :escape_html => true
 end
 
-@root = File.expand_path("..", __FILE__)
 
 helpers do
   def render_markdown(text)
@@ -19,13 +18,14 @@ helpers do
 end
 
 before do
-  @files = Dir.glob("data/*").map { |filepath| filepath.split("/").last }
+  @root = File.expand_path("..", __FILE__)
+  @files = Dir.glob(@root + "/data/*").map { |filepath| filepath.split("/").last }
 end
 
 def load_file(filename)
   case File.extname(filename) 
   when ".md"
-    render_markdown(File.read("data/#{filename}"))
+    render_markdown(File.read(@root + "/data/#{filename}"))
   when ".txt"
     headers["Content-Type"] = "text/plain"
     File.read("data/#{filename}")
@@ -49,7 +49,7 @@ end
 
 get "/:filename/edit" do
   @filename = params[:filename]
-  @text = File.read("data/#{@filename}")
+  @text = File.read(@root + "/data/#{@filename}")
   erb :edit, layout: :layout
 end
 
@@ -57,7 +57,7 @@ post "/:filename" do
   @filename = params[:filename]
   #full_file_path = File.expand_path("../data", __FILE__) + @filename
 
-  File.write("data/#{@filename}", "#{params[:new_text]}")
+  File.write(@root + "/data/#{@filename}", "#{params[:new_text]}")
   session[:message] = "#{@filename} has been updated."
   redirect "/"
 end
