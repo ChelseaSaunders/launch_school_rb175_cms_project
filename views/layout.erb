@@ -3,10 +3,19 @@
   <head>
     <title>CMS Project</title>
     <meta charset ="UTF-8">
+    <link rel="stylesheet" href="/stylesheets/application.css">
   </head>
+
   <body>
-    <main>
-      <%== yield %>
-    </main>
+    <% if session[:message] %>
+      <div>
+        <p class="flash_message"><%= session.delete(:message) %></p>
+      </div>
+    <% end %>
+    <div>
+      <main>
+        <%== yield %>
+      </main>
+    </div>
   </body>
 </html>
