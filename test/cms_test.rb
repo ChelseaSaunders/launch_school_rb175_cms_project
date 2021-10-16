@@ -128,4 +128,29 @@ class AppTest < Minitest::Test
 
     assert_includes last_response.body, "This is the edited text."
   end
+
+  def test_view_new_document_form
+    get "/new"
+
+    assert_equal 200, last_response.status
+    assert_includes last_response.body, "<input"
+    assert_includes last_response.body, %q(<input type="submit")
+  end
+
+  def test_create_new_document
+    post "/create", new_file: "test.txt"
+    assert_equal 302, last_response.status
+
+    get last_response["Location"]
+    assert_includes last_response.body, "test.txt has been created"
+
+    get "/"
+    assert_includes last_response.body, "test.txt"
+  end
+
+  def test_create_new_document_without_filename
+    post "/create", new_file: ""
+    assert_equal 422, last_response.status
+    assert_includes last_response.body, "A name is required"
+  end
 end

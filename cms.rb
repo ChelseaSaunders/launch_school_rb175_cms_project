@@ -66,21 +66,22 @@ get "/:filename/edit" do
 end
 
 post "/:filename" do
-  file_path = File.join(data_path, params[:filename])
-
-  File.write(file_path, params[:new_text])
-
-  session[:message] = "#{params[:filename]} has been updated."
-  redirect "/"
-end
-
-post "/create/new" do
-  if params[:new_file].empty?
-    session[:message] = "A name is required."
-    redirect "/new"
+  if params[:filename] == "create"
+    if params[:new_file].empty?
+      session[:message] = "A name is required."
+      status 422
+      erb :new
+    else
+      File.new("#{data_path}/#{params[:new_file]}", "w")
+      session[:message] = "#{params[:new_file]} has been created."
+      redirect "/"
+    end
   else
-    File.new("#{data_path}/#{params[:new_file]}", "w")
-    session[:message] = "#{params[:new_file]} has been created."
+    file_path = File.join(data_path, params[:filename])
+
+    File.write(file_path, params[:new_text])
+
+    session[:message] = "#{params[:filename]} has been updated."
     redirect "/"
   end
 end
