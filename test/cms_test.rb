@@ -153,4 +153,10 @@ class AppTest < Minitest::Test
     assert_equal 422, last_response.status
     assert_includes last_response.body, "A name is required"
   end
+
+  def test_create_new_document_with_invalid_extension
+    post "/create", new_file: "invalid.wrongext"
+    assert_equal 422, last_response.status
+    assert_includes last_response.body, "Invalid file type"
+  end
 end

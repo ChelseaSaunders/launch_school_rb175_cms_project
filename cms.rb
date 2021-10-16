@@ -35,6 +35,15 @@ def load_file(path)
   end
 end
 
+def invalid_filename?(filename)
+  if filename.empty?
+    "A name is required."
+  elsif [".md", ".txt"].include?(File.extname(filename)) == false
+    "Invalid file type. Only markdown (.md) and text (.txt) files are valid."
+  else
+    false 
+  end
+end
 get "/" do
   pattern = File.join(data_path, "*")
   @files = Dir.glob(pattern).map do |path|
@@ -67,8 +76,10 @@ end
 
 post "/:filename" do
   if params[:filename] == "create"
-    if params[:new_file].empty?
-      session[:message] = "A name is required."
+    
+    invalid = invalid_filename?(params[:new_file])
+   if invalid
+      session[:message] = invalid #"A name is required."
       status 422
       erb :new
     else
