@@ -48,6 +48,8 @@ get "/:filename" do
 
   if File.exist?(file_path)
     load_file(file_path)
+  elsif params[:filename] == "new"
+    erb :new, layout: :layout
   else
     session[:message] = "#{params[:filename]} does not exist."
     redirect "/"
@@ -70,4 +72,15 @@ post "/:filename" do
 
   session[:message] = "#{params[:filename]} has been updated."
   redirect "/"
+end
+
+post "/create/new" do
+  if params[:new_file].empty?
+    session[:message] = "A name is required."
+    redirect "/new"
+  else
+    File.new("#{data_path}/#{params[:new_file]}", "w")
+    session[:message] = "#{params[:new_file]} has been created."
+    redirect "/"
+  end
 end
