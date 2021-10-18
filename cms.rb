@@ -44,6 +44,7 @@ def invalid_filename?(filename)
     false 
   end
 end
+
 get "/" do
   pattern = File.join(data_path, "*")
   @files = Dir.glob(pattern).map do |path|
@@ -51,6 +52,28 @@ get "/" do
   end
   
   erb :index
+end
+
+get "/users/signin" do
+  erb :signin
+end
+
+post "/users/signin" do
+  if params[:username] == "admin" && params[:password] == "secret"
+    session[:username] = params[:username]
+    session[:message] = "Welcome!"
+    redirect "/"
+  else
+    session[:message] = "Invalid Credentials"
+    status 422
+    erb :signin
+  end
+end
+
+post "/users/signout" do
+  session.delete(:username)
+  session[:message] = "You have been signed out."
+  redirect "/"
 end
 
 get "/:filename" do
@@ -77,7 +100,6 @@ end
 
 post "/:filename" do
   if params[:filename] == "create"
-    
     invalid = invalid_filename?(params[:new_file])
    if invalid
       session[:message] = invalid #"A name is required."
@@ -96,13 +118,13 @@ post "/:filename" do
     session[:message] = "#{params[:filename]} has been updated."
     redirect "/"
   end 
-  
-  post "/:filename/delete" do
-    file_path = File.join(data_path, params[:filename])
+end
 
-    File.delete(file_path)
+post "/:filename/delete" do
+  file_path = File.join(data_path, params[:filename])
 
-    session[:message] = "#{params[:filename]} has been deleted."
-    redirect "/"
-  end
+  File.delete(file_path)
+
+  session[:message] = "#{params[:filename]} has been deleted."
+  redirect "/"
 end

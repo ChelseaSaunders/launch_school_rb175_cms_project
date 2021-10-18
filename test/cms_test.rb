@@ -161,11 +161,41 @@ class AppTest < Minitest::Test
   end
 
   def test_deleting_document
-    post "/new_file.md/delete", new_file: "new_file.md"
+    create_file("new_file.md")
+
+    post "/new_file.md/delete"
     assert_equal 302, last_response.status
-    assert_includes last_response.body, "new_file.md was deleted."
+
+    get last_response["Location"]
+    assert_includes last_response.body, "new_file.md has been deleted."
 
     get "/"
-    refute_includes last_response.body "new_file.md"
+    refute_includes last_response.body, "new_file.md"
+  end
+
+  def test_valid_signin
+    post "/users/signin", username: "admin", password: "secret"
+    assert_equal 302, last_response.status
+
+    get last_response["Location"]
+    assert_includes last_response.body, "Signed in as admin."
+    assert_includes last_response.body, "Welcome"
+  end
+
+  def test_invalid_signin
+    post "/users/signin", username: "invalid", password: "wrong"
+    assert_equal 422, last_response.status
+    assert_includes last_response.body, "Invalid Credentials"
+  end
+
+  def test_signout
+    post "/users/signin", username: "admin", password: "secret"
+    get last_response["Location"]
+    assert_includes last_response.body, "Welcome"
+    post "/users/signout"
+    assert_equal 302, last_response.status 
+    get last_response["Location"]
+    assert_includes last_response.body, "You have been signed out."
+    refute_includes last_response.body, "Signed in as admin."
   end
 end
