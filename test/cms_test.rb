@@ -30,6 +30,10 @@ class AppTest < Minitest::Test
     end
   end
 
+  def session
+    last_request.env["rack.session"]
+  end
+
   def test_index
     create_file("about.md")
     create_file("changes.txt")
@@ -81,11 +85,12 @@ class AppTest < Minitest::Test
     get "/nonexistant.txt"
 
     assert_equal 302, last_response.status
-    get last_response["Location"] # Request the page that the user was redirected to
-    assert_equal 200, last_response.status
-    assert_includes last_response.body, "nonexistant.txt does not exist."
+    assert_includes session[:message], "nonexistant.txt does not exist."
 
-    get "/" # Reload the page
+    get last_response["Location"] 
+    assert_equal 200, last_response.status
+
+    get "/" 
 
     refute_includes last_response.body, "nonexistant.txt does not exist."
   end
@@ -105,13 +110,10 @@ class AppTest < Minitest::Test
     create_file("changes.txt", "This is the original text.")
 
     post "/changes.txt", new_text: "This is the edited text."
-
     assert_equal 302, last_response.status
-    get last_response["Location"]
-    assert_includes last_response.body, "changes.txt has been updated"
+    assert_includes session[:message], "changes.txt has been updated"
   
     get "/changes.txt"
-    
     assert_includes last_response.body, "This is the edited text."
   end
 
@@ -121,11 +123,9 @@ class AppTest < Minitest::Test
     post "/about.md", new_text: "This is the edited text."
 
     assert_equal 302, last_response.status
-    get last_response["Location"]
-    assert_includes last_response.body, "about.md has been updated"
+    assert_includes session[:message], "about.md has been updated"
 
     get "/about.md"
-
     assert_includes last_response.body, "This is the edited text."
   end
 
@@ -140,9 +140,7 @@ class AppTest < Minitest::Test
   def test_create_new_document
     post "/create", new_file: "test.txt"
     assert_equal 302, last_response.status
-
-    get last_response["Location"]
-    assert_includes last_response.body, "test.txt has been created"
+    assert_includes session[:message], "test.txt has been created"
 
     get "/"
     assert_includes last_response.body, "test.txt"
@@ -165,37 +163,38 @@ class AppTest < Minitest::Test
 
     post "/new_file.md/delete"
     assert_equal 302, last_response.status
-
-    get last_response["Location"]
-    assert_includes last_response.body, "new_file.md has been deleted."
+    assert_includes session[:message], "new_file.md has been deleted."
 
     get "/"
-    refute_includes last_response.body, "new_file.md"
+    refute_includes last_response.body, %q(href="new_file.md")
   end
 
   def test_valid_signin
     post "/users/signin", username: "admin", password: "secret"
     assert_equal 302, last_response.status
+    assert_includes session[:message], "Welcome"
+    assert_equal session[:username], "admin"
 
     get last_response["Location"]
-    assert_includes last_response.body, "Signed in as admin."
-    assert_includes last_response.body, "Welcome"
+    assert_includes last_response.body, "Signed in as admin." 
   end
 
   def test_invalid_signin
     post "/users/signin", username: "invalid", password: "wrong"
     assert_equal 422, last_response.status
+    assert_nil session[:username]
     assert_includes last_response.body, "Invalid Credentials"
   end
 
   def test_signout
-    post "/users/signin", username: "admin", password: "secret"
-    get last_response["Location"]
-    assert_includes last_response.body, "Welcome"
+    get "/", {}, {"rack.session" => { username: "admin" } }
+    assert_includes last_response.body, "Signed in as admin"
+
     post "/users/signout"
     assert_equal 302, last_response.status 
+    assert_includes session[:message], "You have been signed out."
     get last_response["Location"]
-    assert_includes last_response.body, "You have been signed out."
-    refute_includes last_response.body, "Signed in as admin."
+    assert_includes last_response.body, "Sign In"
+    refute_includes last_response.body, "Signed in as admin"
   end
 end
