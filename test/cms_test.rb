@@ -159,4 +159,13 @@ class AppTest < Minitest::Test
     assert_equal 422, last_response.status
     assert_includes last_response.body, "Invalid file type"
   end
+
+  def test_deleting_document
+    post "/new_file.md/delete", new_file: "new_file.md"
+    assert_equal 302, last_response.status
+    assert_includes last_response.body, "new_file.md was deleted."
+
+    get "/"
+    refute_includes last_response.body "new_file.md"
+  end
 end
