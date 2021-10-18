@@ -6,7 +6,7 @@ require "redcarpet"
 configure do
   enable :sessions
   set :session_secret, 'secret'
-  set :erb, :escape_html => true
+  set :erb, escape_html: true
 end
 
 helpers do
@@ -26,7 +26,7 @@ end
 
 def load_file(path)
   text = File.read(path)
-  case File.extname(path) 
+  case File.extname(path)
   when ".md"
     erb render_markdown(text)
   when ".txt"
@@ -41,7 +41,7 @@ def invalid_filename?(filename)
   elsif [".md", ".txt"].include?(File.extname(filename)) == false
     "Invalid file type. Only markdown (.md) and text (.txt) files are valid."
   else
-    false 
+    false
   end
 end
 
@@ -50,7 +50,7 @@ get "/" do
   @files = Dir.glob(pattern).map do |path|
     File.basename(path)
   end
-  
+
   erb :index
 end
 
@@ -101,8 +101,8 @@ end
 post "/:filename" do
   if params[:filename] == "create"
     invalid = invalid_filename?(params[:new_file])
-   if invalid
-      session[:message] = invalid #"A name is required."
+    if invalid
+      session[:message] = invalid
       status 422
       erb :new
     else
@@ -117,7 +117,7 @@ post "/:filename" do
 
     session[:message] = "#{params[:filename]} has been updated."
     redirect "/"
-  end 
+  end
 end
 
 post "/:filename/delete" do
