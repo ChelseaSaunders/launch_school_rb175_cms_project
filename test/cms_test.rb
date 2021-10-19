@@ -87,10 +87,10 @@ class AppTest < Minitest::Test
     assert_equal 302, last_response.status
     assert_includes session[:message], "nonexistant.txt does not exist."
 
-    get last_response["Location"] 
+    get last_response["Location"]
     assert_equal 200, last_response.status
 
-    get "/" 
+    get "/"
 
     refute_includes last_response.body, "nonexistant.txt does not exist."
   end
@@ -112,7 +112,7 @@ class AppTest < Minitest::Test
     post "/changes.txt", new_text: "This is the edited text."
     assert_equal 302, last_response.status
     assert_includes session[:message], "changes.txt has been updated"
-  
+
     get "/changes.txt"
     assert_includes last_response.body, "This is the edited text."
   end
@@ -176,7 +176,7 @@ class AppTest < Minitest::Test
     assert_equal session[:username], "admin"
 
     get last_response["Location"]
-    assert_includes last_response.body, "Signed in as admin." 
+    assert_includes last_response.body, "Signed in as admin."
   end
 
   def test_invalid_signin
@@ -187,11 +187,11 @@ class AppTest < Minitest::Test
   end
 
   def test_signout
-    get "/", {}, {"rack.session" => { username: "admin" } }
+    get "/", {}, { "rack.session" => { username: "admin" } }
     assert_includes last_response.body, "Signed in as admin"
 
     post "/users/signout"
-    assert_equal 302, last_response.status 
+    assert_equal 302, last_response.status
     assert_includes session[:message], "You have been signed out."
     get last_response["Location"]
     assert_includes last_response.body, "Sign In"
