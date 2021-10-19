@@ -18,9 +18,9 @@ end
 
 def data_path
   if ENV["RACK_ENV"] == "test"
-    File.expand_path("test/data", __dir__)
+    File.expand_path("../test/data", __FILE__)
   else
-    File.expand_path("/data", __dir__)
+    File.expand_path("../data", __FILE__)
   end
 end
 
@@ -43,6 +43,10 @@ def invalid_filename?(filename)
   else
     false
   end
+end
+
+def signed_in?
+  session[:username]
 end
 
 get "/" do
@@ -79,7 +83,10 @@ end
 get "/:filename" do
   file_path = File.join(data_path, params[:filename])
 
-  if File.exist?(file_path)
+  if !signed_in?
+    session[:message] = "You must be signed in to do that."
+    redirect "/"
+  elsif File.exist?(file_path)
     load_file(file_path)
   elsif params[:filename] == "new"
     erb :new, layout: :layout
@@ -90,16 +97,24 @@ get "/:filename" do
 end
 
 get "/:filename/edit" do
-  file_path = File.join(data_path, params[:filename])
+  if !signed_in?
+    session[:message] = "You must be signed in to do that."
+    redirect "/"
+  else 
+    file_path = File.join(data_path, params[:filename])
 
-  @filename = params[:filename]
-  @text = File.read(file_path)
+    @filename = params[:filename]
+    @text = File.read(file_path)
 
-  erb :edit
+    erb :edit
+  end
 end
 
 post "/:filename" do
-  if params[:filename] == "create"
+  if !signed_in?
+    session[:message] = "You must be signed in to do that."
+    redirect "/"
+  elsif params[:filename] == "create"
     invalid = invalid_filename?(params[:new_file])
     if invalid
       session[:message] = invalid
@@ -121,10 +136,15 @@ post "/:filename" do
 end
 
 post "/:filename/delete" do
-  file_path = File.join(data_path, params[:filename])
+  if !signed_in?
+    session[:message] = "You must be signed in to do that."
+    redirect "/"
+  else 
+    file_path = File.join(data_path, params[:filename])
 
-  File.delete(file_path)
+    File.delete(file_path)
 
-  session[:message] = "#{params[:filename]} has been deleted."
-  redirect "/"
+    session[:message] = "#{params[:filename]} has been deleted."
+    redirect "/"
+  end
 end
