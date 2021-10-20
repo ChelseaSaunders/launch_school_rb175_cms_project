@@ -264,6 +264,7 @@ class AppTest < Minitest::Test
   end
 
   def test_valid_signin
+  #skip
     post "/users/signin", username: "admin", password: "secret"
     assert_equal 302, last_response.status
     assert_includes session[:message], "Welcome"

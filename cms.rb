@@ -2,6 +2,7 @@ require "tilt/erubis"
 require "sinatra"
 require "sinatra/reloader"
 require "redcarpet"
+require "yaml"
 
 configure do
   enable :sessions
@@ -33,6 +34,25 @@ def load_file(path)
     headers["Content-Type"] = "text/plain"
     text
   end
+end
+
+# def load_credentials
+#   credentials_path = if ENV["RACK_ENV"] == test
+#     File.expand_path("../test/users.yml", __FILE__)
+#   else
+#     File.expand_path("../users.yml", __FILE__)
+#   end
+#   YAML.load_file(credentials_path)
+# end
+
+
+def load_credentials
+  credentials_path = if ENV["RACK_ENV"] == "test"
+    File.expand_path("../test/users.yml", __FILE__)
+  else
+    File.expand_path("../users.yml", __FILE__)
+  end
+  YAML.load_file(credentials_path)
 end
 
 def invalid_filename?(filename)
@@ -70,8 +90,11 @@ get "/users/signin" do
 end
 
 post "/users/signin" do
-  if params[:username] == "admin" && params[:password] == "secret"
-    session[:username] = params[:username]
+  valid_users = load_credentials
+
+  username = params[:username]
+  if valid_users.key?(username) && valid_users[username] == params[:password]
+    session[:username] = username
     session[:message] = "Welcome!"
     redirect "/"
   else
