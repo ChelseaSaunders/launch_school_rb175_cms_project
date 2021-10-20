@@ -34,6 +34,10 @@ class AppTest < Minitest::Test
     last_request.env["rack.session"]
   end
 
+  def admin_session
+    { "rack.session" => { username: "admin" } }
+  end
+
   def test_index
     create_file("about.md")
     create_file("changes.txt")
@@ -48,10 +52,10 @@ class AppTest < Minitest::Test
     assert_includes last_response.body, "history.txt"
   end
 
-  def test_about_md
+  def test_about_md_signed_in
     create_file("about.md", "Ruby is... easy to write.")
 
-    get "/about.md"
+    get "/about.md", {}, admin_session
 
     assert_equal 200, last_response.status
     assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
@@ -59,10 +63,19 @@ class AppTest < Minitest::Test
     assert_includes last_response.body, "easy to write."
   end
 
-  def test_changes_txt
+  def test_about_md_not_signed_in
+    create_file("about.md", "Ruby is... easy to write.")
+    get "/about.md"
+
+    assert_equal 302, last_response.status
+    assert_includes session[:message], "You must be signed in to do that."
+    refute_includes last_response.body, "Ruby is..."
+  end
+
+  def test_changes_txt_signed_in
     create_file("changes.txt", "Testing... 1...2...3")
 
-    get "/changes.txt"
+    get "/changes.txt", {}, admin_session
 
     assert_equal 200, last_response.status
     assert_equal "text/plain", last_response["Content-Type"]
@@ -70,10 +83,20 @@ class AppTest < Minitest::Test
     assert_includes last_response.body, "1...2...3"
   end
 
-  def test_history_txt
+  def test_changes_txt_not_signed_in
+    create_file("changes.txt", "Testing... 1...2...3")
+
+    get "/changes.txt"
+
+    assert_equal 302, last_response.status
+    assert_includes session[:message], "You must be signed in to do that."
+    refute_includes last_response.body, "Testing..."
+  end
+
+  def test_history_txt_signed_in
     create_file("history.txt", "Another test, this is history.txt.")
 
-    get "/history.txt"
+    get "/history.txt", {}, admin_session
 
     assert_equal 200, last_response.status
     assert_equal "text/plain", last_response["Content-Type"]
@@ -81,8 +104,18 @@ class AppTest < Minitest::Test
     assert_includes last_response.body, "this is history.txt."
   end
 
+  def test_history_txt_not_signed_in
+    create_file("history.txt", "Another test, this is history.txt.")
+
+    get "/history.txt"
+
+    assert_equal 302, last_response.status
+    assert_includes session[:message], "You must be signed in to do that."
+    refute_includes last_response.body, "Another test"
+  end
+
   def test_file_does_not_exist
-    get "/nonexistant.txt"
+    get "/nonexistant.txt", {}, admin_session
 
     assert_equal 302, last_response.status
     assert_includes session[:message], "nonexistant.txt does not exist."
@@ -95,10 +128,10 @@ class AppTest < Minitest::Test
     refute_includes last_response.body, "nonexistant.txt does not exist."
   end
 
-  def test_file_edit_page
+  def test_file_edit_page_signed_in
     create_file("changes.txt")
 
-    get "/changes.txt/edit"
+    get "/changes.txt/edit", {}, admin_session
 
     assert_equal 200, last_response.status
     assert_includes last_response.body, "<form"
@@ -106,10 +139,19 @@ class AppTest < Minitest::Test
     assert_includes last_response.body, %q(<input type="submit")
   end
 
-  def test_updating_file_txt
+  def test_file_edit_page_not_signed_in
+    create_file("changes.txt")
+
+    get "/changes.txt/edit"
+    assert_equal 302, last_response.status
+    assert_includes session[:message], "You must be signed in to do that."
+    refute_includes last_response.body, "<form"
+  end
+
+  def test_updating_file_txt_signed_in
     create_file("changes.txt", "This is the original text.")
 
-    post "/changes.txt", new_text: "This is the edited text."
+    post "/changes.txt", { new_text: "This is the edited text." }, admin_session
     assert_equal 302, last_response.status
     assert_includes session[:message], "changes.txt has been updated"
 
@@ -117,10 +159,22 @@ class AppTest < Minitest::Test
     assert_includes last_response.body, "This is the edited text."
   end
 
-  def test_updating_file_md
+  def test_updating_file_txt_not_signed_in
+    create_file("changes.txt", "This is the original text.")
+
+    post "/changes.txt", new_text: "This is the edited text."
+    assert_equal 302, last_response.status
+    assert_includes session[:message], "You must be signed in to do that."
+    
+    get "/changes.txt", {}, admin_session
+    assert_includes last_response.body, "This is the original text."
+    refute_includes last_response.body, "This is the edited text."
+  end
+
+  def test_updating_file_md_signed_in
     create_file("about.md", "This is the original text.")
 
-    post "/about.md", new_text: "This is the edited text."
+    post "/about.md", { new_text: "This is the edited text." }, admin_session
 
     assert_equal 302, last_response.status
     assert_includes session[:message], "about.md has been updated"
@@ -129,16 +183,36 @@ class AppTest < Minitest::Test
     assert_includes last_response.body, "This is the edited text."
   end
 
-  def test_view_new_document_form
-    get "/new"
+  def test_updating_file_md_not_signed_in
+    create_file("about.md", "This is the original text.")
+
+    post "/about.md", { new_text: "This is the edited text." }
+    assert_equal 302, last_response.status
+    assert_includes session[:message], "You must be signed in to do that."
+
+    get "/about.md", {}, admin_session
+    assert_includes last_response.body, "This is the original text."
+    refute_includes last_response.body, "This is the edited text."
+  end
+
+  def test_view_new_document_form_signed_in
+    get "/new", {}, admin_session
 
     assert_equal 200, last_response.status
     assert_includes last_response.body, "<input"
     assert_includes last_response.body, %q(<input type="submit")
   end
 
-  def test_create_new_document
-    post "/create", new_file: "test.txt"
+  def test_view_new_document_form_not_signed_in
+    get "/new"
+
+    assert_equal 302, last_response.status
+    assert_includes session[:message], "You must be signed in to do that."
+    refute_includes last_response.body, "<input"
+  end
+
+  def test_create_new_document_signed_in
+    post "/create", { new_file: "test.txt" }, admin_session
     assert_equal 302, last_response.status
     assert_includes session[:message], "test.txt has been created"
 
@@ -146,27 +220,47 @@ class AppTest < Minitest::Test
     assert_includes last_response.body, "test.txt"
   end
 
+  def test_create_new_document_not_signed_in
+    post "/create", new_file: "test.txt"
+    assert_equal 302, last_response.status
+    assert_includes session[:message], "You must be signed in to do that."
+
+    get "/"
+    refute_includes last_response.body, "test.txt"
+  end
+
   def test_create_new_document_without_filename
-    post "/create", new_file: ""
+    post "/create", { new_file: "" }, admin_session
     assert_equal 422, last_response.status
     assert_includes last_response.body, "A name is required"
   end
 
   def test_create_new_document_with_invalid_extension
-    post "/create", new_file: "invalid.wrongext"
+    post "/create", { new_file: "invalid.wrongext" }, admin_session
     assert_equal 422, last_response.status
     assert_includes last_response.body, "Invalid file type"
   end
 
-  def test_deleting_document
+  def test_deleting_document_signed_in
     create_file("new_file.md")
 
-    post "/new_file.md/delete"
+    post "/new_file.md/delete", {}, admin_session
     assert_equal 302, last_response.status
     assert_includes session[:message], "new_file.md has been deleted."
 
     get "/"
     refute_includes last_response.body, %q(href="new_file.md")
+  end
+
+  def test_deleting_document_not_signed_in
+    create_file("new_file.md")
+
+    post "/new_file.md/delete"
+    assert_equal 302, last_response.status
+    assert_includes session[:message], "You must be signed in to do that."
+    
+    get "/"
+    assert_includes last_response.body, "new_file.md"
   end
 
   def test_valid_signin
