@@ -49,6 +49,13 @@ def signed_in?
   session[:username]
 end
 
+def require_signed_in_user
+  unless signed_in? 
+    session[:message] = "You must be signed in to do that."
+    redirect "/"
+  end
+end
+
 get "/" do
   pattern = File.join(data_path, "*")
   @files = Dir.glob(pattern).map do |path|
@@ -83,10 +90,9 @@ end
 get "/:filename" do
   file_path = File.join(data_path, params[:filename])
 
-  if !signed_in?
-    session[:message] = "You must be signed in to do that."
-    redirect "/"
-  elsif File.exist?(file_path)
+  require_signed_in_user
+
+  if File.exist?(file_path)
     load_file(file_path)
   elsif params[:filename] == "new"
     erb :new, layout: :layout
@@ -97,25 +103,22 @@ get "/:filename" do
 end
 
 get "/:filename/edit" do
-  if !signed_in?
-    session[:message] = "You must be signed in to do that."
-    redirect "/"
-  else 
-    file_path = File.join(data_path, params[:filename])
+  require_signed_in_user
 
-    @filename = params[:filename]
-    @text = File.read(file_path)
+  file_path = File.join(data_path, params[:filename])
 
-    erb :edit
-  end
+  @filename = params[:filename]
+  @text = File.read(file_path)
+
+  erb :edit
 end
 
 post "/:filename" do
-  if !signed_in?
-    session[:message] = "You must be signed in to do that."
-    redirect "/"
-  elsif params[:filename] == "create"
+  require_signed_in_user
+
+  if params[:filename] == "create"
     invalid = invalid_filename?(params[:new_file])
+
     if invalid
       session[:message] = invalid
       status 422
@@ -136,15 +139,11 @@ post "/:filename" do
 end
 
 post "/:filename/delete" do
-  if !signed_in?
-    session[:message] = "You must be signed in to do that."
-    redirect "/"
-  else 
-    file_path = File.join(data_path, params[:filename])
+  require_signed_in_user
+  file_path = File.join(data_path, params[:filename])
 
-    File.delete(file_path)
+  File.delete(file_path)
 
-    session[:message] = "#{params[:filename]} has been deleted."
-    redirect "/"
-  end
+  session[:message] = "#{params[:filename]} has been deleted."
+  redirect "/"
 end
