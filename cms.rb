@@ -18,6 +18,8 @@ helpers do
   end
 end
 
+VALID_FILE_EXTENSIONS = %w(.md .txt)
+
 def data_path
   if ENV["RACK_ENV"] == "test"
     File.expand_path("../test/data", __FILE__)
@@ -59,8 +61,18 @@ end
 def invalid_filename?(filename)
   if filename.empty?
     "A name is required."
-  elsif [".md", ".txt"].include?(File.extname(filename)) == false
+  elsif VALID_FILE_EXTENSIONS.include?(File.extname(filename).downcase) == false
     "Invalid file type. Only markdown (.md) and text (.txt) files are valid."
+  else
+    false
+  end
+end
+
+def invalid_image?(imagename)
+  if imagename.empty?
+    "A name is required."
+  elsif File.extname(imagename).downcase != ".jpg"
+    "Invalid vile type. Only jpeg (.jpg) files allowed."
   else
     false
   end
@@ -116,14 +128,17 @@ post "/users/signout" do
 end
 
 get "/:filename" do
-  file_path = File.join(data_path, params[:filename])
-
   require_signed_in_user
 
-  if File.exist?(file_path)
-    load_file(file_path)
+  @file_path = File.join(data_path, params[:filename])
+
+  if File.exist?(@file_path) && File.extname(@file_path) == ".jpg"
+    headers["Content-Type"]="text/html"
+    erb :image
+  elsif File.exist?(@file_path) 
+    load_file(@file_path)
   elsif params[:filename] == "new"
-    erb :new, layout: :layout
+    erb :new
   else
     session[:message] = "#{params[:filename]} does not exist."
     redirect "/"
@@ -140,6 +155,24 @@ get "/:filename/edit" do
 
   erb :edit
 end
+
+post "/image/upload" do
+  require_signed_in_user
+  imagename = params[:image][:filename]
+  tempfile = params[:image][:tempfile]
+  invalid_image = invalid_image?(imagename)
+
+  if invalid_image
+    session[:message] = invalid_image
+    status 422
+    redirect "/"
+  else
+    image_path = "#{data_path}/#{imagename}"
+    File.open(image_path, "w") { |image| image.write tempfile.read }
+    session[:message] = "Image uploaded successfully."
+    redirect "/"
+  end
+end 
 
 post "/:filename" do
   require_signed_in_user

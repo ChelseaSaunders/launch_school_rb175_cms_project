@@ -1,1 +1,1 @@
-edited content
+<img src="b1000644.JPG" />

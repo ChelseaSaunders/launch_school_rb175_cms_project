@@ -14,14 +14,22 @@
 </ul>
 
 <p><a href="/new">New Document</a></p>
-  <% if session[:username] %>
-    <form action="/users/signout" method="post" class="inline">
-    <p class="user_status">Signed in as <%= session[:username] %>.
-      <button type="submit">Sign Out</button></p>
-    </form>
-  <% else %>
-    <form action="/users/signin" method="get">
-      <p><button type="submit">Sign In</button></p>
-    </form>
-  <% end %>
+
+<p>Upload an image:</p>
+
+<form action="/image/upload" method="post" enctype="multipart/form-data">
+  <input name="image" type="file" />
+  <input type="submit" value="Upload Image" />
+</form>
+
+<% if session[:username] %>
+  <form action="/users/signout" method="post" class="inline">
+  <p class="user_status">Signed in as <%= session[:username] %>.
+    <button type="submit">Sign Out</button></p>
+  </form>
+<% else %>
+  <form action="/users/signin" method="get">
+    <p><button type="submit">Sign In</button></p>
+  </form>
+<% end %>
 </p>
