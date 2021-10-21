@@ -264,6 +264,34 @@ class AppTest < Minitest::Test
     assert_includes last_response.body, "new_file.md"
   end
 
+  def test_duplicating_document_signed_in
+    create_file("new.txt", "original text")
+    post"/new.txt/duplicate", {}, admin_session
+    assert_equal 302, last_response.status
+    assert_includes session[:message], "Created copy of new.txt"
+
+    get "/"
+    assert_includes last_response.body, "new_copy.txt"
+
+    get "/new_copy.txt"
+    assert_includes last_response.body, "original text"
+  end
+
+  def test_duplicating_document_not_signed_in
+    create_file("new.txt", "original text")
+    post"/new.txt/duplicate"
+  
+    assert_equal 302, last_response.status
+    assert_includes session[:message], "You must be signed in to do that."
+
+    get "/"
+    refute_includes last_response.body, "new_copy.txt"
+
+    get "/new_copy.txt"
+    assert_equal 302, last_response.status
+    assert_includes session[:message], "You must be signed in to do that."
+  end
+
   def test_valid_signin
     post "/users/signin", username: "admin", password: "secret"
     assert_equal 302, last_response.status
