@@ -46,7 +46,6 @@ def load_credentials
   YAML.load_file(credentials_path)
 end
 
-
 def valid_credentials?(username, password)
   credentials = load_credentials
   if credentials.key?(username)
@@ -76,6 +75,12 @@ def require_signed_in_user
     session[:message] = "You must be signed in to do that."
     redirect "/"
   end
+end
+
+def create_duplicate_file_name(file_name)
+  file_ext = File.extname(file_name)
+  file_basename = File.basename(file_name, ".*")
+  "#{file_basename}_copy#{file_ext}"
 end
 
 get "/" do
@@ -168,5 +173,21 @@ post "/:filename/delete" do
   File.delete(file_path)
 
   session[:message] = "#{params[:filename]} has been deleted."
+  redirect "/"
+end
+
+post "/:filename/duplicate" do
+  require_signed_in_user
+  original_file_name = params[:filename]
+  new_file_name = create_duplicate_file_name(original_file_name)
+
+  original_file_path = File.join(data_path, original_file_name)
+  original_file_text = File.read(original_file_path)
+  new_file_path = File.join(data_path, new_file_name)
+  
+  File.write(new_file_path, original_file_text)
+
+  session[:message] = "Created copy of #{original_file_name}"
+
   redirect "/"
 end
