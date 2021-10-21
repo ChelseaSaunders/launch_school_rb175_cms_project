@@ -3,6 +3,7 @@ GEM
   specs:
     ansi (1.5.0)
     backports (3.21.0)
+    bcrypt (3.1.16)
     builder (3.2.4)
     erubis (2.7.0)
     minitest (5.14.4)
@@ -37,6 +38,7 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
+  bcrypt
   erubis
   minitest-reporters
   rack

@@ -3,6 +3,7 @@ require "sinatra"
 require "sinatra/reloader"
 require "redcarpet"
 require "yaml"
+require "bcrypt"
 
 configure do
   enable :sessions
@@ -36,16 +37,6 @@ def load_file(path)
   end
 end
 
-# def load_credentials
-#   credentials_path = if ENV["RACK_ENV"] == test
-#     File.expand_path("../test/users.yml", __FILE__)
-#   else
-#     File.expand_path("../users.yml", __FILE__)
-#   end
-#   YAML.load_file(credentials_path)
-# end
-
-
 def load_credentials
   credentials_path = if ENV["RACK_ENV"] == "test"
     File.expand_path("../test/users.yml", __FILE__)
@@ -53,6 +44,17 @@ def load_credentials
     File.expand_path("../users.yml", __FILE__)
   end
   YAML.load_file(credentials_path)
+end
+
+
+def valid_credentials?(username, password)
+  credentials = load_credentials
+  if credentials.key?(username)
+    bcrypt_password = BCrypt::Password.new(credentials[username]) 
+    bcrypt_password == password
+  else
+    false
+  end
 end
 
 def invalid_filename?(filename)
@@ -90,10 +92,8 @@ get "/users/signin" do
 end
 
 post "/users/signin" do
-  valid_users = load_credentials
-
   username = params[:username]
-  if valid_users.key?(username) && valid_users[username] == params[:password]
+  if valid_credentials?(username, params[:password])
     session[:username] = username
     session[:message] = "Welcome!"
     redirect "/"
