@@ -1,5 +1,2 @@
-# Ruby is...
-
-Easy to write
-
-# Editing works
+# Picture of Aubrey
+<img src="/images/aubrey.jpg" />

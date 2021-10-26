@@ -28,6 +28,14 @@ def data_path
   end
 end
 
+def image_path
+  if ENV["RACK_ENV"] == "test"
+    File.expand_path("../test/public/images", __FILE__)
+  else
+    File.expand_path("../public/images", __FILE__)
+  end
+end
+
 def load_file(path)
   text = File.read(path)
   case File.extname(path)
@@ -85,7 +93,7 @@ end
 def require_signed_in_user
   unless signed_in? 
     session[:message] = "You must be signed in to do that."
-    redirect "/"
+    redirect "/users/signin"
   end
 end
 
@@ -96,10 +104,13 @@ def create_duplicate_file_name(file_name)
 end
 
 get "/" do
-  pattern = File.join(data_path, "*")
-  @files = Dir.glob(pattern).map do |path|
-    File.basename(path)
-  end
+  require_signed_in_user
+  
+  document_pattern = File.join(data_path, "*")
+  @files = Dir.glob(document_pattern).map { |path| File.basename(path) }
+
+  image_pattern = File.join(image_path, "*")
+  @images = Dir.glob(image_pattern).map { |path| File.basename(path) }
 
   erb :index
 end
@@ -132,10 +143,7 @@ get "/:filename" do
 
   @file_path = File.join(data_path, params[:filename])
 
-  if File.exist?(@file_path) && File.extname(@file_path) == ".jpg"
-    headers["Content-Type"]="text/html"
-    erb :image
-  elsif File.exist?(@file_path) 
+  if File.exist?(@file_path) 
     load_file(@file_path)
   elsif params[:filename] == "new"
     erb :new
@@ -155,24 +163,6 @@ get "/:filename/edit" do
 
   erb :edit
 end
-
-post "/image/upload" do
-  require_signed_in_user
-  imagename = params[:image][:filename]
-  tempfile = params[:image][:tempfile]
-  invalid_image = invalid_image?(imagename)
-
-  if invalid_image
-    session[:message] = invalid_image
-    status 422
-    redirect "/"
-  else
-    image_path = "#{data_path}/#{imagename}"
-    File.open(image_path, "w") { |image| image.write tempfile.read }
-    session[:message] = "Image uploaded successfully."
-    redirect "/"
-  end
-end 
 
 post "/:filename" do
   require_signed_in_user
@@ -201,8 +191,8 @@ end
 
 post "/:filename/delete" do
   require_signed_in_user
-  file_path = File.join(data_path, params[:filename])
 
+  file_path = File.join(data_path, params[:filename])
   File.delete(file_path)
 
   session[:message] = "#{params[:filename]} has been deleted."
@@ -211,9 +201,9 @@ end
 
 post "/:filename/duplicate" do
   require_signed_in_user
+
   original_file_name = params[:filename]
   new_file_name = create_duplicate_file_name(original_file_name)
-
   original_file_path = File.join(data_path, original_file_name)
   original_file_text = File.read(original_file_path)
   new_file_path = File.join(data_path, new_file_name)
@@ -223,4 +213,30 @@ post "/:filename/duplicate" do
   session[:message] = "Created copy of #{original_file_name}"
 
   redirect "/"
+end
+
+get "/image/:image" do
+  require_signed_in_user
+
+  @image = params[:image]
+  erb :image
+end
+
+post "/image/upload" do
+  require_signed_in_user
+
+  imagename = params[:image][:filename]
+  tempfile = params[:image][:tempfile]
+  invalid_image = invalid_image?(imagename)
+
+  if invalid_image
+    session[:message] = invalid_image
+    status 422
+    redirect "/"
+  else
+    image_path = "#{data_path}/#{imagename}"
+    File.open(image_path, "w") { |image| image.write tempfile.read }
+    session[:message] = "Image uploaded successfully."
+    redirect "/"
+  end
 end

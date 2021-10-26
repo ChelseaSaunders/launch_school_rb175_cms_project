@@ -1,3 +1,4 @@
+<h3>Available Documents</h3>
 <ul>
   <% @files.each do |file| %>
     <li>
@@ -12,10 +13,19 @@
     </li>
   <% end %>
 </ul>
+<p><a href="/new">Createa a New Document</a></p>
 
-<p><a href="/new">New Document</a></p>
+<h3>Available Images</h3>
+<ul>
+  <% @images.each do |image| %>
+    <% puts image %>
+    <li>
+      <a href="/images/<%= image %>"><%= image %></a>
+    </li>
+  <% end %>
+</ul>
 
-<p>Upload an image:</p>
+<p>Upload an Image:</p>
 
 <form action="/image/upload" method="post" enctype="multipart/form-data">
   <input name="image" type="file" />
