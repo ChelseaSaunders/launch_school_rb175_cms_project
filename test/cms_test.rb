@@ -318,15 +318,16 @@ class AppTest < Minitest::Test
 
   def test_adding_image_signed_in
     skip
-    image = Rack::Test::UploadedFile.new("#{image_path}/aubrey2.JPG")
+    stored_image_path = File.expand_path("../test/public/images", __FILE__)
+    image = ENV[File.open("#{stored_image_path}/aubrey.jpg")]
     
-    post "/image/upload", { image: { filename: "aubrey2.JPG", tempfile: image } }, admin_session
+    post "/image/upload", { image: { filename: "aubrey.jpg", tempfile: image } }, admin_session
     assert_equal 302, last_response.status
     assert_includes session[:message], "Image uploaded successfully"
 
     get "/"
     assert_equal 200, last_response.status
-    assert_includes last_response.body, "aubrey2.JPG"
+    assert_includes last_response.body, "aubrey.jpg"
   end
 
   def test_adding_image_not_signed_in

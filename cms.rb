@@ -29,7 +29,11 @@ def data_path
 end
 
 def image_path
-  File.expand_path("../public/images", __FILE__)
+  if ENV["RACK_ENV"] == "test"
+    File.expand_path("../test/public/images", __FILE__)
+  else
+    File.expand_path("../public/images", __FILE__)
+  end
 end
 
 def load_file(path)

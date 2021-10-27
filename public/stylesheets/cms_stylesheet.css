@@ -1,0 +1,55 @@
+body {
+  font-family: 'Courier New', Courier, monospace;
+  color: darkslategray;
+  background: cornsilk
+}
+
+div {
+  margin-bottom: 50px;
+}
+
+h3 {
+  margin: 0, 0, 0,5px;
+}
+
+ul {
+  list-style-type: none;
+  margin-left: 0;
+  padding-left: 0;
+}
+
+li {
+  padding-bottom: 5px;
+}
+
+img {
+  max-width: 500px;
+}
+
+a {
+  color: cadetblue;
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+button, input {
+  font-family:Verdana, Geneva, Tahoma, sans-serif
+}
+
+.list_link {
+  color: cornflowerblue
+}
+
+.flash_message {
+  padding: 10px;
+  background: thistle;
+}
+
+.inline {
+  display: inline;
+}
+
+.user_status {
+  font-style: italic;
+  font-size: 0.9em;
+}
