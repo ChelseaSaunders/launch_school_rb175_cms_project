@@ -29,11 +29,7 @@ def data_path
 end
 
 def image_path
-  if ENV["RACK_ENV"] == "test"
-    File.expand_path("../test/public/images", __FILE__)
-  else
-    File.expand_path("../public/images", __FILE__)
-  end
+  File.expand_path("../public/images", __FILE__)
 end
 
 def load_file(path)
@@ -215,9 +211,15 @@ end
 
 get "/image/:image" do
   require_signed_in_user
-
   @image = params[:image]
-  erb :image
+  file_path = File.join(image_path, @image)
+
+  if File.exist?(file_path) 
+    erb :image
+  else
+    session[:message] = "Image does not exist. Please select image from list."
+    redirect "/"
+  end
 end
 
 post "/image/upload" do
