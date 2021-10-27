@@ -20,6 +20,9 @@ end
 
 VALID_FILE_EXTENSIONS = %w(.md .txt)
 
+# rubocop:disable Style/ExpandPathArguments
+# Rubocop's preferred style breaks code/does not return correct path.
+
 def data_path
   if ENV["RACK_ENV"] == "test"
     File.expand_path("../test/data", __FILE__)
@@ -49,17 +52,19 @@ end
 
 def load_credentials
   credentials_path = if ENV["RACK_ENV"] == "test"
-    File.expand_path("../test/users.yml", __FILE__)
-  else
-    File.expand_path("../users.yml", __FILE__)
-  end
+                       File.expand_path("../test/users.yml", __FILE__)
+                     else
+                       File.expand_path("../users.yml", __FILE__)
+                     end
   YAML.load_file(credentials_path)
 end
+
+# rubocop:enable Style/ExpandPathArguments
 
 def valid_credentials?(username, password)
   credentials = load_credentials
   if credentials.key?(username)
-    bcrypt_password = BCrypt::Password.new(credentials[username]) 
+    bcrypt_password = BCrypt::Password.new(credentials[username])
     bcrypt_password == password
   else
     false
@@ -91,10 +96,10 @@ def signed_in?
 end
 
 def require_signed_in_user
-  unless signed_in? 
-    session[:message] = "You must be signed in to do that."
-    redirect "/users/signin"
-  end
+  return if signed_in?
+
+  session[:message] = "You must be signed in to do that."
+  redirect "/users/signin"
 end
 
 def create_duplicate_file_name(file_name)
@@ -141,7 +146,7 @@ get "/:filename" do
 
   @file_path = File.join(data_path, params[:filename])
 
-  if File.exist?(@file_path) 
+  if File.exist?(@file_path)
     load_file(@file_path)
   elsif params[:filename] == "new"
     erb :new
@@ -205,7 +210,7 @@ post "/:filename/duplicate" do
   original_file_path = File.join(data_path, original_file_name)
   original_file_text = File.read(original_file_path)
   new_file_path = File.join(data_path, new_file_name)
-  
+
   File.write(new_file_path, original_file_text)
 
   session[:message] = "Created copy of #{original_file_name}"
@@ -218,7 +223,7 @@ get "/image/:image" do
   @image = params[:image]
   file_path = File.join(image_path, @image)
 
-  if File.exist?(file_path) 
+  if File.exist?(file_path)
     erb :image
   else
     session[:message] = "Image does not exist. Please select image from list."
@@ -236,11 +241,11 @@ post "/image/upload" do
   if invalid_image
     session[:message] = invalid_image
     status 422
-    redirect "/"
   else
     path = "#{image_path}/#{imagename}"
     File.open(path, "w") { |image| image.write tempfile.read }
     session[:message] = "Image uploaded successfully."
-    redirect "/"
   end
+
+  redirect "/"
 end
