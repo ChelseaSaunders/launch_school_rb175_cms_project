@@ -104,8 +104,6 @@ def create_duplicate_file_name(file_name)
 end
 
 get "/" do
-  require_signed_in_user
-  
   document_pattern = File.join(data_path, "*")
   @files = Dir.glob(document_pattern).map { |path| File.basename(path) }
 
@@ -234,8 +232,8 @@ post "/image/upload" do
     status 422
     redirect "/"
   else
-    image_path = "#{data_path}/#{imagename}"
-    File.open(image_path, "w") { |image| image.write tempfile.read }
+    path = "#{image_path}/#{imagename}"
+    File.open(path, "w") { |image| image.write tempfile.read }
     session[:message] = "Image uploaded successfully."
     redirect "/"
   end

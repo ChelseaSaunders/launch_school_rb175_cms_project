@@ -291,6 +291,26 @@ class AppTest < Minitest::Test
     assert_equal 302, last_response.status
     assert_includes session[:message], "You must be signed in to do that."
   end
+  
+  def test_adding_image_signed_in
+    image = File.new("#{image_path}/aubrey2.jpg", "w")
+    
+    post "/image/upload", { image: { filename: "aubrey2.jpg", tempfile: image } }, admin_session
+    assert_equal 302, last_response.status
+    assert_includes session[:message], "Image uploaded successfully"
+
+    get "/"
+    assert_equals 200, last_response.status
+    assert_includes last_response.body, "aubrey2.jpg"
+
+    get "/images/aubrey2.jpg"
+    assert equals 200, last_response.status
+    assert_includes last_response.body "aubrey2.jpg"
+  end
+
+  # def test_adding_image_not_signed_in
+  #   skip
+  # end
 
   def test_valid_signin
     post "/users/signin", username: "admin", password: "secret"
@@ -321,3 +341,4 @@ class AppTest < Minitest::Test
     refute_includes last_response.body, "Signed in as admin"
   end
 end
+
